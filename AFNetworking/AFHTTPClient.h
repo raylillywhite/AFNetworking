@@ -33,6 +33,7 @@
 #import "AFURLSessionManager.h"
 #import "AFHTTPRequestOperation.h"
 #import "AFSerialization.h"
+#import "AFSecurity.h"
 
 /**
  `AFHTTPClient` encapsulates the common patterns of communicating with an web application over HTTP, including request creation, response serialization, network reachability monitoring, and security, as well as both request operation and session task management.
@@ -109,6 +110,16 @@ typedef NS_ENUM(NSInteger, AFNetworkReachabilityStatus) {
  The reachability status from the device to the current `baseURL` of the `AFHTTPClient`.
  */
 @property (readonly, nonatomic, assign) AFNetworkReachabilityStatus networkReachabilityStatus;
+
+/**
+ Default SSL pinning mode for each `AFHTTPRequestOperation` created by `HTTPRequestOperationWithRequest:success:failure:`.
+ */
+@property (nonatomic, assign) AFSSLPinningMode SSLPinningMode;
+
+/**
+ Default to include all *.cer files included in the main bundle.
+ */
+@property (nonatomic, strong) NSArray * pinnedCertificates;
 
 /**
  Whether each `AFHTTPRequestOperation` created by `HTTPRequestOperationWithRequest:success:failure:` should accept an invalid SSL certificate.

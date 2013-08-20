@@ -483,13 +483,10 @@ didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge
 
     if (self.taskDidReceiveAuthenticationChallenge) {
         disposition = self.taskDidReceiveAuthenticationChallenge(session, task, challenge, &credential);
-    } else {
-        [self URLSession:session didReceiveChallenge:challenge completionHandler:completionHandler];
-        return;
     }
 
     if (completionHandler) {
-        completionHandler(NSURLSessionAuthChallengePerformDefaultHandling, credential);
+        completionHandler(disposition, credential);
     }
 }
 
