@@ -29,11 +29,31 @@ typedef NS_ENUM(NSUInteger, AFSSLPinningMode) {
     AFSSLPinningModeCertificate,
 };
 
-@interface AFSecurity : NSObject
-+ (NSArray*)defaultPinnedCertificates;
+/**
+ 
+ */
+@interface AFSecurityPolicy : NSObject
 
-+ (BOOL)shouldTrustServerTrust:(SecTrustRef)serverTrust
-               withPinningMode:(AFSSLPinningMode)pinningMode
-            pinnedCertificates:(NSArray*)pinnedCertificates
-   allowInvalidSSLCertificates:(BOOL)allowInvalidSSLCertificates;
+/**
+ 
+ */
+@property (nonatomic, assign) AFSSLPinningMode SSLPinningMode;
+
+/**
+ 
+ */
+@property (nonatomic, strong) NSArray *pinnedCertificates;
+
+/**
+ 
+ */
+@property (nonatomic, assign) BOOL allowInvalidCertificates;
+
++ (instancetype)defaultSecurity;
+
++ (instancetype)debugSecurity;
+
+- (BOOL)shouldTrustServerTrust:(SecTrustRef)serverTrust;
+
+//- (void)setAuthenticationChallengeBlockForRequestOperation:(AFURLRequestOperation *)requestOperation;
 @end

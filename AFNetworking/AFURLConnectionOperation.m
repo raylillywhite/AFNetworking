@@ -189,8 +189,8 @@ static BOOL AFSecKeyIsEqualToKey(SecKeyRef key1, SecKeyRef key2) {
     self.shouldUseCredentialStorage = YES;
 
     self.state = AFOperationReadyState;
-    
-    self.pinnedCertificates = [AFSecurity defaultPinnedCertificates];
+
+    self.securityPolicy = [AFSecurityPolicy defaultSecurity];
 
     return self;
 }
@@ -487,22 +487,14 @@ willSendRequestForAuthenticationChallenge:(NSURLAuthenticationChallenge *)challe
         self.authenticationChallenge(connection, challenge);
         return;
     }
-    
-    __weak __typeof(&*self)weakSelf = self;
+
     if ([challenge.protectionSpace.authenticationMethod isEqualToString:NSURLAuthenticationMethodServerTrust]) {
-        SecTrustRef serverTrust = challenge.protectionSpace.serverTrust;
-        BOOL shouldTrustServerTrust = [AFSecurity shouldTrustServerTrust:serverTrust
-                                                         withPinningMode:weakSelf.SSLPinningMode
-                                                      pinnedCertificates:weakSelf.pinnedCertificates
-                                             allowInvalidSSLCertificates:weakSelf.allowsInvalidSSLCertificate];
-        if(shouldTrustServerTrust){
-            NSURLCredential *credential = [NSURLCredential credentialForTrust:serverTrust];
+        if ([self.securityPolicy shouldTrustServerTrust:challenge.protectionSpace.serverTrust]) {
+            NSURLCredential *credential = [NSURLCredential credentialForTrust:challenge.protectionSpace.serverTrust];
             [[challenge sender] useCredential:credential forAuthenticationChallenge:challenge];
-        }
-        else {
+        } else {
             [[challenge sender] cancelAuthenticationChallenge:challenge];
         }
-        return;
     } else {
         if ([challenge previousFailureCount] == 0) {
             if (self.credential) {
@@ -513,7 +505,6 @@ willSendRequestForAuthenticationChallenge:(NSURLAuthenticationChallenge *)challe
         } else {
             [[challenge sender] continueWithoutCredentialForAuthenticationChallenge:challenge];
         }
-        return;
     }
 }
 

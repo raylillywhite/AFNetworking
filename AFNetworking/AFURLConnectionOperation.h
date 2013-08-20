@@ -23,7 +23,7 @@
 #import <Foundation/Foundation.h>
 
 #import <Availability.h>
-#import "AFSecurity.h"
+#import "AFSecurityPolicy.h"
 
 /**
  `AFURLConnectionOperation` is a subclass of `NSOperation` that implements `NSURLConnection` delegate methods.
@@ -154,15 +154,13 @@
  */
 @property (nonatomic, strong) NSURLCredential *credential;
 
-/**
- The pinning mode which will be used for SSL connections. `AFSSLPinningModeNone` by default.
- */
-@property (nonatomic, assign) AFSSLPinningMode SSLPinningMode;
+///
 
 /**
- Default to include all *.cer files included in the main bundle.
+ 
  */
-@property (nonatomic, strong) NSArray * pinnedCertificates;
+@property (nonatomic, strong) AFSecurityPolicy *securityPolicy;
+
 
 ///------------------------
 /// @name Accessing Streams

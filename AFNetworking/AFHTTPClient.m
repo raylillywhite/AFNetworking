@@ -159,8 +159,8 @@ typedef id AFNetworkReachabilityRef;
     [self startMonitoringNetworkReachability];
 #endif
 
-    self.pinnedCertificates = [AFSecurity defaultPinnedCertificates];
-    
+    self.securityPolicy = [AFSecurityPolicy defaultSecurity];
+
     return self;
 }
 
@@ -323,12 +323,6 @@ typedef id AFNetworkReachabilityRef;
     operation.responseSerializer = self.responseSerializer;
 
     [operation setCompletionBlockWithSuccess:success failure:failure];
-
-    operation.allowsInvalidSSLCertificate = self.allowsInvalidSSLCertificate;
-    
-    operation.pinnedCertificates = self.pinnedCertificates;
-    
-    operation.SSLPinningMode = self.SSLPinningMode;
 
     return operation;
 }
@@ -597,7 +591,6 @@ typedef id AFNetworkReachabilityRef;
 
     self.requestSerializer = [aDecoder decodeObjectForKey:@"requestSerializer"];
     self.responseSerializer = [aDecoder decodeObjectForKey:@"responseSerializer"];
-    self.allowsInvalidSSLCertificate = [aDecoder decodeBoolForKey:@"allowsInvalidSSLCertificate"];
 
     return self;
 }
@@ -608,7 +601,6 @@ typedef id AFNetworkReachabilityRef;
     [aCoder encodeObject:self.baseURL forKey:@"baseURL"];
     [aCoder encodeObject:self.requestSerializer forKey:@"requestSerializer"];
     [aCoder encodeObject:self.responseSerializer forKey:@"responseSerializer"];
-    [aCoder encodeBool:self.allowsInvalidSSLCertificate forKey:@"allowsInvalidSSLCertificate"];
 }
 
 #pragma mark - NSCopying
@@ -618,45 +610,35 @@ typedef id AFNetworkReachabilityRef;
 
     HTTPClient.requestSerializer = [self.requestSerializer copyWithZone:zone];
     HTTPClient.responseSerializer = [self.responseSerializer copyWithZone:zone];
-    HTTPClient.allowsInvalidSSLCertificate = self.allowsInvalidSSLCertificate;
     HTTPClient.networkReachabilityStatusBlock = self.networkReachabilityStatusBlock;
     
     return HTTPClient;
 }
 
 #pragma mark - NSURLSessionDelegate
-- (void)URLSession:(NSURLSession *)session didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition, NSURLCredential *))completionHandler{
-    
-    if(!completionHandler){
+
+- (void)URLSession:(NSURLSession *)session
+didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge
+ completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition, NSURLCredential *))completionHandler
+{
+    if (!completionHandler) {
         return;
     }
-    __weak __typeof(&*self)weakSelf = self;
-    [super
-     URLSession:session
-     didReceiveChallenge:challenge
-     completionHandler:^(NSURLSessionAuthChallengeDisposition disposition, NSURLCredential *credential) {
-        
-         if(disposition != NSURLSessionAuthChallengePerformDefaultHandling){
-             completionHandler(disposition,credential);
+    
+    [super URLSession:session didReceiveChallenge:challenge completionHandler:^(NSURLSessionAuthChallengeDisposition disposition, NSURLCredential *credential) {
+         if (disposition != NSURLSessionAuthChallengePerformDefaultHandling) {
+             completionHandler(disposition, credential);
              return;
-         }
-         else {
+         } else {
              if ([challenge.protectionSpace.authenticationMethod isEqualToString:NSURLAuthenticationMethodServerTrust]) {
-                 SecTrustRef serverTrust = challenge.protectionSpace.serverTrust;
-                 BOOL shouldTrustServerTrust = [AFSecurity shouldTrustServerTrust:serverTrust
-                                                                  withPinningMode:weakSelf.SSLPinningMode
-                                                               pinnedCertificates:weakSelf.pinnedCertificates
-                                                      allowInvalidSSLCertificates:weakSelf.allowsInvalidSSLCertificate];
-                 if(shouldTrustServerTrust){
-                     credential = [NSURLCredential credentialForTrust:serverTrust];
-                     completionHandler(NSURLSessionAuthChallengeUseCredential,credential);
+                 if ([self.securityPolicy shouldTrustServerTrust:challenge.protectionSpace.serverTrust]) {
+                     credential = [NSURLCredential credentialForTrust:challenge.protectionSpace.serverTrust];
+                     completionHandler(NSURLSessionAuthChallengeUseCredential, credential);
+                 } else {
+                     completionHandler(NSURLSessionAuthChallengeCancelAuthenticationChallenge, nil);
                  }
-                 else {
-                     completionHandler(NSURLSessionAuthChallengeCancelAuthenticationChallenge,nil);
-                 }
-             }
-             else {
-                completionHandler(NSURLSessionAuthChallengePerformDefaultHandling,nil);
+             } else {
+                completionHandler(NSURLSessionAuthChallengePerformDefaultHandling, nil);
              }
          }
     }];
